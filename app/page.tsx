@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { Mail } from "lucide-react";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 
 export default function Home() {
 	const [email, setEmail] = useState<string>("");
@@ -20,29 +20,43 @@ export default function Home() {
 		}
 
 		setLoading(true);
-		setTimeout(async () => {
+
+		try {
 			const response = await axios.delete(
 				`https://tipmyticket.codevibestudios.com/auth/deleteUser?email=${email}`
 			);
 
-			console.log(response);
-
-			if (response?.status !== 200) {
+			if (response.status === 200) {
+				setMessage({
+					text: "Your account has been removed!",
+					type: "success",
+				});
+			} else {
 				setMessage({
 					text: "Something went wrong. Please try again later.",
 					type: "error",
 				});
-				setLoading(false);
-				return;
 			}
+		} catch (error) {
+			const axiosError = error as AxiosError;
 
-			setMessage({
-				text: "Your account has been removed!",
-				type: "success",
-			});
-			setEmail("");
-			setLoading(false);
-		}, 1500);
+			// Handle 400 error separately
+			if (axiosError.response?.status === 400) {
+				setMessage({
+					text: "Invalid email. Please check and try again.",
+					type: "error",
+				});
+			} else {
+				setMessage({
+					text: "Something went wrong. Please try again later.",
+					type: "error",
+				});
+			}
+			console.error("API Error:", axiosError);
+		}
+
+		setEmail("");
+		setLoading(false);
 	};
 
 	return (
@@ -52,7 +66,7 @@ export default function Home() {
 					Delete Account
 				</h2>
 				<p className="text-gray-600 text-center mb-6">
-					Enter email Id to delete your account.
+					Enter your email ID to delete your account.
 				</p>
 				<form onSubmit={handleSubscribe} className="space-y-4">
 					<div className="relative">
